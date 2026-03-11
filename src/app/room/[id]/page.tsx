@@ -24,6 +24,7 @@ export default function RoomPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   
   // Story form state
   const [newStoryTitle, setNewStoryTitle] = useState('');
@@ -136,6 +137,45 @@ export default function RoomPage() {
     }
   };
 
+  const handleDeleteStory = async (storyId: string) => {
+    if (!confirm('Are you sure you want to delete this story?')) return;
+
+    try {
+      // Optimistically remove from local state
+      setStories((current) => current.filter((s) => s.id !== storyId));
+
+      const { error } = await supabase
+        .from('stories')
+        .delete()
+        .eq('id', storyId);
+
+      if (error) {
+        // Rollback if there's an error
+        const { data: rollbackData } = await supabase
+          .from('stories')
+          .select('*')
+          .eq('room_id', id)
+          .order('created_at', { ascending: true });
+        
+        if (rollbackData) setStories(rollbackData);
+        throw error;
+      }
+    } catch (err: any) {
+      console.error('Error deleting story:', err);
+      alert(err.message || 'Failed to delete story.');
+    }
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black font-sans text-zinc-600 dark:text-zinc-400">
@@ -176,8 +216,20 @@ export default function RoomPage() {
             </p>
           </div>
           <div className="flex gap-3">
-             <button className="px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm text-zinc-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-900 transition-all">
-                Copy Link
+             <button 
+               onClick={handleCopyLink}
+               className={`px-4 py-2 border rounded-lg text-sm transition-all flex items-center gap-2 ${
+                 copied 
+                   ? 'bg-green-50 border-green-200 text-green-600 dark:bg-green-900/20 dark:border-green-800 dark:text-green-400' 
+                   : 'border-zinc-300 dark:border-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-white dark:hover:bg-zinc-900'
+               }`}
+             >
+                {copied ? (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Copied!
+                  </>
+                ) : 'Copy Link'}
              </button>
              <button className="px-4 py-2 bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 rounded-lg text-sm font-medium hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-all">
                 Add Participant
@@ -234,10 +286,18 @@ export default function RoomPage() {
                                   {story.status}
                                </span>
                             </div>
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                               <button className="px-3 py-1 bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 rounded text-xs font-bold">
+                            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                               <button className="px-3 py-1 bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 rounded text-xs font-bold transition-all hover:scale-105 active:scale-95">
                                   Vote
                                </button>
+                               {isAdmin && (
+                                  <button 
+                                    onClick={() => handleDeleteStory(story.id)}
+                                    className="px-3 py-1 border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-900/30 dark:hover:bg-red-900/20 rounded text-xs font-bold transition-all hover:scale-105 active:scale-95"
+                                  >
+                                     Delete
+                                  </button>
+                               )}
                             </div>
                          </div>
                       ))

@@ -51,8 +51,19 @@ CREATE POLICY "Public read for participants" ON participants FOR SELECT USING (t
 CREATE POLICY "Public read for stories" ON stories FOR SELECT USING (true);
 CREATE POLICY "Public read for votes" ON votes FOR SELECT USING (true);
 
--- Allow anyone to insert for now (for development/testing)
+-- Allow anyone to insert, update, delete for now (for development/testing)
 CREATE POLICY "Anyone can insert rooms" ON rooms FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can update rooms" ON rooms FOR UPDATE USING (true);
+CREATE POLICY "Anyone can delete rooms" ON rooms FOR DELETE USING (true);
+
 CREATE POLICY "Anyone can insert participants" ON participants FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can update participants" ON participants FOR UPDATE USING (true);
+CREATE POLICY "Anyone can delete participants" ON participants FOR DELETE USING (true);
+
 CREATE POLICY "Anyone can insert stories" ON stories FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can update stories" ON stories FOR UPDATE USING (true);
+CREATE POLICY "Anyone can delete stories" ON stories FOR DELETE USING (true);
+
 CREATE POLICY "Anyone can insert votes" ON votes FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can update votes" ON votes FOR UPDATE USING (true);
+CREATE POLICY "Anyone can delete votes" ON votes FOR DELETE USING (true);
