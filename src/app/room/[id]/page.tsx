@@ -26,6 +26,32 @@ export default function RoomPage() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   
+  // User name and presence state
+  const [userName, setUserName] = useState<string | null>(null);
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [participants, setParticipants] = useState<{ userId: string; name: string }[]>([]);
+  const [userId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      let id = localStorage.getItem('poker_user_id');
+      if (!id) {
+        id = Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('poker_user_id', id);
+      }
+      return id;
+    }
+    return '';
+  });
+
+  useEffect(() => {
+    const savedName = localStorage.getItem('poker_user_name');
+    if (savedName) {
+      setUserName(savedName);
+    } else {
+      setShowNameModal(true);
+    }
+  }, []);
+
   // Story form state
   const [newStoryTitle, setNewStoryTitle] = useState('');
   const [isAddingStory, setIsAddingStory] = useState(false);
@@ -39,7 +65,7 @@ export default function RoomPage() {
       setIsAdmin(true);
     }
 
-    async function fetchRoomAndStories() {
+    const fetchRoomAndStories = async () => {
       try {
         // Fetch room
         const { data: roomData, error: roomError } = await supabase
@@ -105,6 +131,47 @@ export default function RoomPage() {
       supabase.removeChannel(channel);
     };
   }, [id]);
+
+  useEffect(() => {
+    if (!id || !userName) return;
+
+    const channel = supabase.channel(`room-presence-${id}`);
+
+    channel
+      .on('presence', { event: 'sync' }, () => {
+        const state = channel.presenceState();
+        const users: any[] = [];
+        Object.keys(state).forEach((key) => {
+          users.push(...state[key]);
+        });
+        // Deduplicate by userId
+        const uniqueUsers = Array.from(new Map(users.map(u => [u.userId, u])).values());
+        setParticipants(uniqueUsers as any);
+      })
+      .subscribe(async (status) => {
+        if (status === 'SUBSCRIBED') {
+          await channel.track({
+            userId,
+            name: userName,
+            online_at: new Date().toISOString(),
+          });
+        }
+      });
+
+    return () => {
+      channel.unsubscribe();
+    };
+  }, [id, userName, userId]);
+
+  const handleNameSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmedName = nameInput.trim();
+    if (!trimmedName) return;
+
+    localStorage.setItem('poker_user_name', trimmedName);
+    setUserName(trimmedName);
+    setShowNameModal(false);
+  };
 
   const handleAddStory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -308,16 +375,74 @@ export default function RoomPage() {
           
           <div className="space-y-6">
              <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-                <h3 className="font-bold mb-4 text-zinc-900 dark:text-zinc-50 uppercase text-xs tracking-widest">
+                <h3 className="font-bold mb-4 text-zinc-900 dark:text-zinc-50 uppercase text-xs tracking-widest flex items-center justify-between">
                    Participants
+                   <span className="px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-[10px] text-zinc-500 font-mono">
+                      {participants.length}
+                   </span>
                 </h3>
-                <p className="text-zinc-400 dark:text-zinc-600 italic text-sm">
-                  No participants yet...
-                </p>
+                <div className="space-y-3">
+                   {participants.length === 0 ? (
+                      <p className="text-zinc-400 dark:text-zinc-600 italic text-sm">
+                        No participants yet...
+                      </p>
+                   ) : (
+                      participants.map((p) => (
+                        <div key={p.userId} className="flex items-center gap-3">
+                           <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-600 dark:text-zinc-400">
+                              {p.name.charAt(0).toUpperCase()}
+                           </div>
+                           <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
+                              {p.name} {p.userId === userId ? '(You)' : ''}
+                           </span>
+                        </div>
+                      ))
+                   )}
+                </div>
              </div>
           </div>
         </section>
       </div>
+
+      {showNameModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-900/40 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl p-8 border border-zinc-200 dark:border-zinc-800 animate-in fade-in zoom-in duration-200">
+            <h2 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50 mb-2 text-center">
+              Welcome to the Room
+            </h2>
+            <p className="text-zinc-500 dark:text-zinc-500 text-sm text-center mb-6 leading-relaxed">
+              Enter your name to start estimating stories with your team.
+            </p>
+            <form onSubmit={handleNameSubmit} className="space-y-4">
+              <div>
+                <label
+                  htmlFor="user-name"
+                  className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1"
+                >
+                  Your Name
+                </label>
+                <input
+                  id="user-name"
+                  type="text"
+                  required
+                  autoFocus
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  placeholder="e.g., Jane Smith"
+                  className="w-full px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-50 focus:outline-none focus:ring-2 focus:ring-zinc-500 transition-all text-sm"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={!nameInput.trim()}
+                className="w-full h-11 flex items-center justify-center rounded-lg bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 font-semibold transition-all hover:bg-zinc-800 dark:hover:bg-zinc-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              >
+                Join Room
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
