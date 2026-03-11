@@ -27,6 +27,8 @@ export default function Home() {
       if (supabaseError) throw supabaseError;
 
       if (data) {
+        // Set this user as admin for the created room
+        localStorage.setItem(`room_admin_${data.id}`, 'true');
         router.push(`/room/${data.id}`);
       }
     } catch (err: any) {
