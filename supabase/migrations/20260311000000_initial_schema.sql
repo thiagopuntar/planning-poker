@@ -14,7 +14,8 @@ CREATE TABLE IF NOT EXISTS participants (
     room_id UUID NOT NULL REFERENCES rooms(id) ON DELETE CASCADE,
     user_id UUID, -- For authenticated users, can be null for guests
     name TEXT NOT NULL,
-    joined_at TIMESTAMPTZ DEFAULT NOW()
+    joined_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(room_id, user_id)
 );
 
 -- 3. Stories
