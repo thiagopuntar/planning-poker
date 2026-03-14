@@ -170,5 +170,5 @@ export function useRoomData(id: string) {
     };
   }, [id]);
 
-  return { room, stories, dbParticipants, votes, loading, error, setStories, setVotes };
+  return { room, stories, dbParticipants, votes, loading, error, setStories, setVotes, setDbParticipants };
 }

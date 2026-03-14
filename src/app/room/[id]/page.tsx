@@ -27,7 +27,8 @@ export default function RoomPage() {
     loading, 
     error, 
     setStories, 
-    setVotes 
+    setVotes,
+    setDbParticipants 
   } = useRoomData(id);
 
   const {
@@ -39,7 +40,7 @@ export default function RoomPage() {
     participants,
     participantId,
     handleNameSubmit
-  } = useUserPresence(id);
+  } = useUserPresence(id, setDbParticipants);
 
   useEffect(() => {
     if (!id) return;
@@ -61,6 +62,7 @@ export default function RoomPage() {
     id,
     isAdmin,
     participantId,
+    votes,
     setStories,
     setVotes
   });

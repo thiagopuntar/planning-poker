@@ -6,6 +6,7 @@ interface UseRoomActionsProps {
   id: string;
   isAdmin: boolean;
   participantId: string | null;
+  votes: Vote[];
   setStories: Dispatch<SetStateAction<Story[]>>;
   setVotes: Dispatch<SetStateAction<Vote[]>>;
 }
@@ -14,6 +15,7 @@ export function useRoomActions({
   id, 
   isAdmin, 
   participantId, 
+  votes,
   setStories, 
   setVotes 
 }: UseRoomActionsProps) {
@@ -80,6 +82,41 @@ export function useRoomActions({
   const handleVote = async (storyId: string, value: string) => {
     if (!participantId) return;
 
+    const currentVoteValue = votes.find(v => v.participant_id === participantId && v.story_id === storyId)?.vote_value;
+    const isRemovingVote = currentVoteValue === value;
+
+    if (isRemovingVote) {
+      // Optimistic update
+      setVotes(current => current.filter(v => !(v.participant_id === participantId && v.story_id === storyId)));
+
+      try {
+        const { error } = await supabase
+          .from('votes')
+          .delete()
+          .eq('story_id', storyId)
+          .eq('participant_id', participantId);
+
+        if (error) throw error;
+      } catch (err: any) {
+        console.error('Error removing vote:', err);
+        // Rollback optimistic update on error
+        const { data: rollbackData } = await supabase
+          .from('votes')
+          .select('*')
+          .eq('story_id', storyId);
+        
+        if (rollbackData) {
+          setVotes(current => {
+            const filtered = current.filter(v => v.story_id !== storyId);
+            return [...filtered, ...rollbackData];
+          });
+        }
+        alert(err.message || 'Failed to remove vote.');
+      }
+      return;
+    }
+
+    // Optimistic update for adding/changing vote
     const tempVote: Vote = {
       id: `temp-${Math.random()}`,
       story_id: storyId,

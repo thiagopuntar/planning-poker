@@ -81,22 +81,46 @@ export function ActiveStoryCard({
           })}
         </div>
       ) : (
-        <div className="mt-8 flex flex-wrap gap-4 justify-center">
-          {votes.filter(v => v.story_id === story.id).map((v) => {
-            const p = dbParticipants.find(p => p.id === v.participant_id);
-            return (
-              <div key={v.id} className="flex flex-col items-center gap-2">
-                <div className="w-14 h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800 border-2 border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-2xl text-zinc-900 dark:text-zinc-50 shadow-inner">
-                  {v.vote_value}
+        <div className="mt-8 space-y-8">
+          <div className="flex flex-wrap gap-4 justify-center">
+            {votes.filter(v => v.story_id === story.id).map((v) => {
+              const p = dbParticipants.find(p => p.id === v.participant_id);
+              return (
+                <div key={v.id} className="flex flex-col items-center gap-2">
+                  <div className="w-14 h-20 rounded-xl bg-zinc-100 dark:bg-zinc-800 border-2 border-zinc-200 dark:border-zinc-700 flex items-center justify-center font-bold text-2xl text-zinc-900 dark:text-zinc-50 shadow-inner">
+                    {v.vote_value}
+                  </div>
+                  <span className="text-[10px] font-medium text-zinc-500 uppercase truncate max-w-[60px]">
+                    {p?.name || 'User'}
+                  </span>
                 </div>
-                <span className="text-[10px] font-medium text-zinc-500 uppercase truncate max-w-[60px]">
-                  {p?.name || 'User'}
+              );
+            })}
+            {votes.filter(v => v.story_id === story.id).length === 0 && (
+              <p className="text-zinc-400 italic text-sm py-4">No votes were cast.</p>
+            )}
+          </div>
+
+          {votes.filter(v => v.story_id === story.id).length > 0 && (
+            <div className="pt-6 border-t border-zinc-100 dark:border-zinc-800 flex justify-center">
+              <div className="flex items-center gap-3 bg-zinc-50 dark:bg-zinc-800/50 px-6 py-3 rounded-2xl border border-zinc-200 dark:border-zinc-800">
+                <span className="text-xs font-bold uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+                  Average
+                </span>
+                <span className="text-2xl font-black text-zinc-900 dark:text-zinc-50">
+                  {(() => {
+                    const storyVotes = votes.filter(v => v.story_id === story.id);
+                    const numericVotes = storyVotes
+                      .map(v => parseFloat(v.vote_value))
+                      .filter(val => !isNaN(val));
+                    
+                    if (numericVotes.length === 0) return '—';
+                    const avg = numericVotes.reduce((a, b) => a + b, 0) / numericVotes.length;
+                    return avg % 1 === 0 ? avg.toString() : avg.toFixed(1);
+                  })()}
                 </span>
               </div>
-            );
-          })}
-          {votes.filter(v => v.story_id === story.id).length === 0 && (
-            <p className="text-zinc-400 italic text-sm py-4">No votes were cast.</p>
+            </div>
           )}
         </div>
       )}

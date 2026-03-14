@@ -1,8 +1,13 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, Dispatch, SetStateAction } from 'react';
 import { supabase } from '@/lib/supabase';
-import { OnlineUser } from '../types';
+import { OnlineUser, Participant } from '../types';
 
-export function useUserPresence(id: string) {
+interface UseUserPresenceProps {
+  id: string;
+  setDbParticipants?: Dispatch<SetStateAction<Participant[]>>;
+}
+
+export function useUserPresence(id: string, setDbParticipants?: Dispatch<SetStateAction<Participant[]>>) {
   const [userName, setUserName] = useState<string | null>(null);
   const [showNameModal, setShowNameModal] = useState(false);
   const [nameInput, setNameInput] = useState('');
@@ -46,13 +51,19 @@ export function useUserPresence(id: string) {
     const joinRoom = async () => {
       const { data: existingParticipant } = await supabase
         .from('participants')
-        .select('id')
+        .select('id, name, user_id')
         .eq('room_id', id)
         .eq('user_id', userId)
         .maybeSingle();
 
       if (existingParticipant) {
         setParticipantId(existingParticipant.id);
+        if (setDbParticipants) {
+          setDbParticipants(current => {
+            if (current.some(p => p.id === existingParticipant.id)) return current;
+            return [...current, existingParticipant];
+          });
+        }
         return;
       }
 
@@ -70,11 +81,19 @@ export function useUserPresence(id: string) {
         console.error('Error joining participants table:', error);
         return;
       }
-      if (data) setParticipantId(data.id);
+      if (data) {
+        setParticipantId(data.id);
+        if (setDbParticipants) {
+          setDbParticipants(current => {
+            if (current.some(p => p.id === data.id)) return current;
+            return [...current, data];
+          });
+        }
+      }
     };
 
     joinRoom();
-  }, [id, userName, userId]);
+  }, [id, userName, userId, setDbParticipants]);
 
   useEffect(() => {
     if (!participantId) return;
