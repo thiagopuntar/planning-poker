@@ -11,7 +11,6 @@ import { StoryForm } from './components/StoryForm';
 import { StoriesList } from './components/StoriesList';
 import { ParticipantsList } from './components/ParticipantsList';
 import { NameModal } from './components/NameModal';
-import { Vote } from './types';
 
 export default function RoomPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,7 +32,6 @@ export default function RoomPage() {
 
   const {
     userId,
-    userName,
     showNameModal,
     nameInput,
     setNameInput,
