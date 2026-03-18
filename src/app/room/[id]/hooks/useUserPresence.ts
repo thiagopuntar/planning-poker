@@ -58,10 +58,25 @@ export function useUserPresence(id: string, setDbParticipants?: Dispatch<SetStat
 
       if (existingParticipant) {
         setParticipantId(existingParticipant.id);
+        
+        // Update name if it's different
+        if (existingParticipant.name !== userName) {
+          await supabase
+            .from('participants')
+            .update({ name: userName })
+            .eq('id', existingParticipant.id);
+          
+          if (setDbParticipants) {
+            setDbParticipants(current => 
+              current.map(p => p.id === existingParticipant.id ? { ...p, name: userName } : p)
+            );
+          }
+        }
+
         if (setDbParticipants) {
           setDbParticipants(current => {
             if (current.some(p => p.id === existingParticipant.id)) return current;
-            return [...current, existingParticipant];
+            return [...current, { ...existingParticipant, name: userName }];
           });
         }
         return;
