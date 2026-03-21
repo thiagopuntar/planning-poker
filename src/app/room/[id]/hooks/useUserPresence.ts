@@ -1,5 +1,6 @@
 import { useState, useEffect, FormEvent, Dispatch, SetStateAction } from 'react';
 import { supabase } from '@/lib/supabase';
+import { getPersistentUserId } from '@/lib/auth';
 import { OnlineUser, Participant } from '../types';
 
 interface UseUserPresenceProps {
@@ -14,17 +15,7 @@ export function useUserPresence(id: string, setDbParticipants?: Dispatch<SetStat
   const [participants, setParticipants] = useState<OnlineUser[]>([]);
   const [participantId, setParticipantId] = useState<string | null>(null);
 
-  const [userId] = useState(() => {
-    if (typeof window !== 'undefined') {
-      let id = localStorage.getItem('poker_user_id');
-      if (!id || id.length < 30) {
-        id = crypto.randomUUID();
-        localStorage.setItem('poker_user_id', id);
-      }
-      return id;
-    }
-    return '';
-  });
+  const [userId] = useState(() => getPersistentUserId());
 
   useEffect(() => {
     const savedName = localStorage.getItem('poker_user_name');
