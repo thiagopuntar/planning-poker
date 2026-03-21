@@ -22,6 +22,7 @@ export interface Participant {
   id: string;
   name: string;
   user_id: string;
+  last_voted_story_id?: string | null;
 }
 
 export interface OnlineUser {

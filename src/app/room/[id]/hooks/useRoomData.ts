@@ -39,7 +39,7 @@ export function useRoomData(id: string) {
         // Fetch participants from DB
         const { data: participantsData, error: participantsError } = await supabase
           .from('participants')
-          .select('id, name, user_id')
+          .select('id, name, user_id, last_voted_story_id')
           .eq('room_id', id);
 
         if (participantsError) throw participantsError;

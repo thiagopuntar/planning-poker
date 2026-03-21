@@ -39,8 +39,14 @@ export function ParticipantsList({
             
             if (!dbP) return null;
 
-            const hasVoted = votingStory && votes.some(v => v.participant_id === dbP.id && v.story_id === votingStory.id);
-            const revealedVote = revealedStory && votes.find(v => v.participant_id === dbP.id && v.story_id === revealedStory.id);
+            const hasVoted = votingStory && (
+              dbP.last_voted_story_id === votingStory.id ||
+              votes.some(v => v.participant_id === dbP.id && v.story_id === votingStory.id)
+            );
+            
+            // Only show the revealed vote if we AREN'T currently voting for a story
+            const revealedVote = !votingStory && revealedStory && 
+                                votes.find(v => v.participant_id === dbP.id && v.story_id === revealedStory.id);
 
             return (
               <div key={p.userId} className="flex items-center justify-between">
@@ -53,7 +59,7 @@ export function ParticipantsList({
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {hasVoted && !revealedStory && (
+                  {hasVoted && (
                     <div className="w-6 h-8 bg-zinc-900 dark:bg-zinc-50 rounded border-2 border-zinc-200 dark:border-zinc-800 animate-pulse" title="Voted" />
                   )}
                   {revealedVote && (

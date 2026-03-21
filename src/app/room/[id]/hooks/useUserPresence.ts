@@ -42,7 +42,7 @@ export function useUserPresence(id: string, setDbParticipants?: Dispatch<SetStat
     const joinRoom = async () => {
       const { data: existingParticipant } = await supabase
         .from('participants')
-        .select('id, name, user_id')
+        .select('id, name, user_id, last_voted_story_id')
         .eq('room_id', id)
         .eq('user_id', userId)
         .maybeSingle();
