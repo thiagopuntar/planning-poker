@@ -32,4 +32,11 @@ export interface OnlineUser {
   online_at: string;
 }
 
+export type EmojiConfettiEvent = {
+  type: 'emoji_confetti';
+  emoji: string;
+  userId: string;
+  timestamp: number;
+};
+
 export const CARD_VALUES = ['0', '1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?', '☕'];

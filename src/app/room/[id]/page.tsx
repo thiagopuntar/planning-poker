@@ -1,16 +1,19 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useRoomData } from './hooks/useRoomData';
 import { useUserPresence } from './hooks/useUserPresence';
 import { useRoomActions } from './hooks/useRoomActions';
+import { useEmojiConfettiSubscription } from './hooks/useEmojiConfettiSubscription';
+import { triggerEmojiConfetti } from './services/emojiConfetti';
 import { RoomHeader } from './components/RoomHeader';
 import { ActiveStoryCard } from './components/ActiveStoryCard';
 import { StoryForm } from './components/StoryForm';
 import { StoriesList } from './components/StoriesList';
 import { ParticipantsList } from './components/ParticipantsList';
 import { NameModal } from './components/NameModal';
+import { EmojiPicker } from './components/EmojiPicker';
 
 export default function RoomPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,6 +42,12 @@ export default function RoomPage() {
     participantId,
     handleNameSubmit
   } = useUserPresence(id, setDbParticipants);
+
+  const handleEmojiConfetti = useCallback((emoji: string) => {
+    triggerEmojiConfetti(emoji);
+  }, []);
+
+  useEmojiConfettiSubscription(id, handleEmojiConfetti);
 
   useEffect(() => {
     if (!id) return;
@@ -114,6 +123,9 @@ export default function RoomPage() {
           onCopyLink={handleCopyLink}
           copied={copied}
         />
+        <div className="flex justify-center md:justify-end">
+          <EmojiPicker roomId={id} userId={userId} />
+        </div>
 
         <section className="grid md:grid-cols-3 gap-8">
           <div className="md:col-span-2 space-y-6">
